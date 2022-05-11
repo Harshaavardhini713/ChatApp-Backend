@@ -18,12 +18,12 @@ import mongoose from "mongoose";
     
          static async createMessage(message) {
             let parent;
+
             if(message.parent) {
              parent = new mongoose.Types.ObjectId(message.parent);
             } else {
              parent="6277a375bb6bdf65917b6d54";
             }
-            console.log("detai;s:", message);
             
             try {
                 // console.log("display:", message);
@@ -38,15 +38,16 @@ import mongoose from "mongoose";
                     seen : true
                 }
                 const Message = await messages.create(newMessage);
-                const newChat = await chats.find({_id:message[0]._id}).populate('users');
+                const newChat = await chats.find({_id: new mongoose.Types.ObjectId(message[0]._id)}).populate('users');
                 let messagesLocal = newChat[0].messages; 
+                messagesLocal.push(Message.get('_id'));
                 const chat = await chats.updateMany({_id:message[0]._id},{$set:{messages:messagesLocal}},{$set:{noOfUnreadMessages:0}});
-                const chatMessage = await chatController.getChatByChatID(message[0]._id);
-                const listOfMessage = chatMessage[0].messages;
+                const chatMessage = await chatController.getChatByChatID(new mongoose.Types.ObjectId(message[0]._id));
+                const listOfMessage = chatMessage[0].messages ;
+               
                 listOfMessage.map(message => {
                     message.seen = true;
                 });
-                console.log(chatMessage);
                 
                 const updateMessages = chats.updateOne({_id:message[0]._id},{$set:{messages:listOfMessage}});
                  return Message;
