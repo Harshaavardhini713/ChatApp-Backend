@@ -96,11 +96,10 @@ export default class Server {
             return messageController.deleteMessage(req.params.id);
         }   
         ));
-        this.app.post("/api/v1/chat/getChatById", responseToPostman((req: Request, res: Response) => {
-            // console.log(req.body);
-            
-            return chatController.getChatById(req.body);
+        this.app.get("/api/v1/chat/getChatByChatID/:id", responseToPostman((req: Request, res: Response) => {
+            return chatController.getChatByChatID(req.params.id);
         }));
+            
 
         this.app.get("/contactPage", responseToPostman(async (req:Request, res: Response) => {
             //  @ts-ignore

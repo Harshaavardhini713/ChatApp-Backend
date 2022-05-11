@@ -17,6 +17,7 @@ import {generate} from "shortid"
     time: Date;
     conType: string;
     msgType: string;
+    parent: string;
     seen: boolean;
  }
  
@@ -49,6 +50,10 @@ import {generate} from "shortid"
     type:{
         type: String,
         required:true
+    },
+    parent:{
+        type: String,
+        // required:true   
     },
     seen:{
         type:Boolean,

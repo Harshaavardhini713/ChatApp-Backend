@@ -76,17 +76,31 @@ import mongoose from "mongoose";
     }
 
 
-    /**
+   /**
      * creating a new chat
      */
     static async createChat(chat) {
+
+        const members = chat.users.split(",");
+        members.map(member => {
+            member = new mongoose.Types.ObjectId(member);
+        });
         try {
-            const Chat = await chats.create(chat);
-            return Chat;
+            const newChat = {
+                messages: null,
+                users: members,
+                type: chat.type,
+                time: new Date(),
+                conType: chat.conType,
+                title: chat.title,
+                noOfUnreadMessages: 0
+            }
+            const Chat = await chats.create(newChat);
+            return Chat;    
         } catch (error) {
             throw error;
         }
-    } 
+    }  
 
     /**
      * Delete a chat by id
@@ -171,5 +185,46 @@ import mongoose from "mongoose";
             throw error;
         }
     } 
-       
+    static async getChatByChatID(id) {
+        const newId = new mongoose.Types.ObjectId(id);
+        
+        try {
+            const chat = await chats.find({"_id":newId})
+            .populate('users')
+            .populate({
+                path: 'messages',
+                populate: {
+                    path: 'parent',
+                    model: 'messages',
+                }
+            })
+            .exec();
+           
+            
+            if(chat[0].messages !== null) {
+            //get last message from messages 
+            const lastMessage = chat[0].messages[chat[0].messages.length - 1];
+            if(lastMessage.seen === false){    
+            // find no of messages are seen is false and add the count in noOfUnreadMessages
+                chat.map(chat => {
+                    let noOfUnread = 0;
+                    chat.messages.map(message => {
+                        if(message.seen === false) {
+                            noOfUnread++;
+                        }
+                    }
+                    );
+                    chat.noOfUnread = noOfUnread;
+                });
+            }   else {
+                chat.map(chat => {
+                    chat.noOfUnread = 0;
+                });
+            }
+        }
+            return chat;
+        } catch (error) {
+            throw error;
+        }
+    }
  }

@@ -5,7 +5,7 @@
 import messages, { IMessage } from "../models/message";
 import chatController from "./chatController";
 import chats from "../models/chat";
-import users from "../models/user";
+import mongoose from "mongoose";
 
 
  
@@ -16,31 +16,40 @@ import users from "../models/user";
         * @param CreateMessage
         */
     
-        static async createMessage(message) {
+         static async createMessage(message) {
+            let parent;
+            if(message.parent) {
+             parent = new mongoose.Types.ObjectId(message.parent);
+            } else {
+             parent="6277a375bb6bdf65917b6d54";
+            }
+            console.log("detai;s:", message);
+            
             try {
-                console.log("display:", message);
+                // console.log("display:", message);
                 const newMessage = {
                     message: message.value,
                     userName: message[0].title,
                     type: message[0].type,
                     time: message[0].time,
                     conType : message[0].conType,
-                    msgType : message.msgType
-
+                    msgType : message.msgType,
+                    parent : parent,
+                    seen : true
                 }
                 const Message = await messages.create(newMessage);
-                // const user = await users.find();
-                
-                // const chat = chats.updateOne({_id:message[0]._id},{$push:{messages:Message._id}});
-                // // return Message;
-                const newChat = await chats.find({_id:message[0]._id});
+                const newChat = await chats.find({_id:message[0]._id}).populate('users');
                 let messagesLocal = newChat[0].messages; 
-                console.log("messagesLocal:", messagesLocal);
-                messagesLocal.push(Message.get('_id'));
-                console.log("messagesLocal:", messagesLocal);
-                const chat = await chats.updateOne({_id:message[0]._id},{$set:{messages:messagesLocal}});
-                // // const Message = await messages.create(message);
-                return Message;
+                const chat = await chats.updateMany({_id:message[0]._id},{$set:{messages:messagesLocal}},{$set:{noOfUnreadMessages:0}});
+                const chatMessage = await chatController.getChatByChatID(message[0]._id);
+                const listOfMessage = chatMessage[0].messages;
+                listOfMessage.map(message => {
+                    message.seen = true;
+                });
+                console.log(chatMessage);
+                
+                const updateMessages = chats.updateOne({_id:message[0]._id},{$set:{messages:listOfMessage}});
+                 return Message;
             } catch (error) {
                 console.log("error:", error);
                 
@@ -48,15 +57,31 @@ import users from "../models/user";
             }
         }
 
-        /**
+         /**
          * getting all messages
          * @param id
          * @returns {Promise<*>}
          */
         
-        static async getAllMessages(id) : Promise<IMessage[]> {
+          static async getAllMessages(id) : Promise<IMessage[]> {
             try {
-                const message = await messages.find({messageId:id});
+                const message = messages.aggregate([
+                    {
+                        $match: {
+                            _id: id
+                        },
+                    },
+                    {
+                        $lookup: {
+                            from: "messages",
+                            localField: "parent",
+                            foreignField: "_id",
+                            as: "parent"
+                        }
+                    },
+                ]).exec();
+
+                // const message = await messages.find({messageId:id}).populate('messages').exec();
                 return message;
             } catch (error) {
                 throw error;
