@@ -3,11 +3,30 @@
  */
 
 import chats, { IChat } from "../models/chat";
-import user from "../models/user";
+import users from "../models/user";
 import mongoose from "mongoose";
 
  
  export default class chatController {
+    static async addMember(data) {
+        try {
+            const groupid = new mongoose.Types.ObjectId(data.groupid);
+            const member = new mongoose.Types.ObjectId(data.userid);
+            const newChat = await chats.find({_id: groupid}).populate('users');
+            console.log("newChat:", newChat);
+            
+            let usersLocal = newChat[0].users;; 
+            const user = await users.findById(member);
+            usersLocal.push(user.get('_id'));
+            console.log("users:", usersLocal);
+            
+            const chat = await chats.updateOne({_id:groupid},{$set:{users:usersLocal}});
+            
+            
+        } catch (error) {
+            throw error;
+        }
+    }
  
    /**
     * getting all chats
@@ -80,11 +99,14 @@ import mongoose from "mongoose";
      * creating a new chat
      */
     static async createChat(chat) {
+        // console.log(chat);
 
         const members = chat.users.split(",");
         members.map(member => {
             member = new mongoose.Types.ObjectId(member);
         });
+        
+        
         try {
             const newChat = {
                 messages: null,
@@ -108,7 +130,7 @@ import mongoose from "mongoose";
      */
     static async deleteChat(id) {
         try {
-            const chat = await chats.findByIdAndDelete(id);
+            const chat = await chats.updateOne({id},{$set:{messages:null}});
             return chat;
         } catch (error) {
             throw error;
@@ -190,13 +212,10 @@ import mongoose from "mongoose";
      */
     static async getUserPersonalChat(data) : Promise<IChat[]> {
         try {
-        
            const newId = new mongoose.Types.ObjectId(data);
            const chats = await this.getChats();
-            
            const chat = chats.filter(chat =>  chat.conType === "individual");
            const final =  chat.filter(chat => chat.users[0]._id.toString() === newId.toString() || chat.users[1]._id.toString()===newId.toString());
-           //console.log(final)
            return final;
         } catch (error) {
             throw error;
@@ -232,14 +251,6 @@ import mongoose from "mongoose";
             } catch (error) {
                 throw error;
             }
-        
-        //    const newId = new mongoose.Types.ObjectId(data);
-        //    const chat = chats.find({users:newId, conType:"group"}).populate("users",{name: users.name}).sort({ updatedAt: 'desc'});
-        //    //console.log(chat);
-        //    return chat;
-        // } catch (error) {
-        //     throw error;
-        // }
     }
 
     static async searchChat(data) : Promise<IChat[]> {

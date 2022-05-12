@@ -99,7 +99,9 @@ export default class Server {
         this.app.get("/api/v1/chat/getChatByChatID/:id", responseToPostman((req: Request, res: Response) => {
             return chatController.getChatByChatID(req.params.id);
         }));
-            
+        this.app.post("/addmember/", responseToPostman((req: Request, res: Response) => {
+            return chatController.addMember(req.body);
+        }));
 
         this.app.get("/contactPage", responseToPostman(async (req:Request, res: Response) => {
             //  @ts-ignore

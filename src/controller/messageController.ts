@@ -18,7 +18,8 @@ import mongoose from "mongoose";
     
          static async createMessage(message) {
             let parent;
-
+            // console.log(message);
+            
             if(message.parent) {
              parent = new mongoose.Types.ObjectId(message.parent);
             } else {
@@ -39,7 +40,7 @@ import mongoose from "mongoose";
                 }
                 const Message = await messages.create(newMessage);
                 const newChat = await chats.find({_id: new mongoose.Types.ObjectId(message[0]._id)}).populate('users');
-                let messagesLocal = newChat[0].messages; 
+                let messagesLocal = newChat[0].messages ?? []; 
                 messagesLocal.push(Message.get('_id'));
                 const chat = await chats.updateMany({_id:message[0]._id},{$set:{messages:messagesLocal}},{$set:{noOfUnreadMessages:0}});
                 const chatMessage = await chatController.getChatByChatID(new mongoose.Types.ObjectId(message[0]._id));
