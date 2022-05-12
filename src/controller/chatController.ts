@@ -106,6 +106,11 @@ import mongoose from "mongoose";
             member = new mongoose.Types.ObjectId(member);
         });
         
+        const conversion = chats.findOne({users: {$all: members}});
+        if(conversion) {
+            return conversion;
+        }
+        
         
         try {
             const newChat = {
@@ -297,8 +302,8 @@ import mongoose from "mongoose";
         // const group = await chats.find({_id: data.group, users: data.user});
         // console.log(group);
         await chats.updateOne({_id: data.group, users: data.user},{ $pull: { 'users': data.user }});
-        // const updatedGroup = await chats.find({_id: data.group})
-        // console.log(updatedGroup);
+        const updatedGroup = await chats.find({_id: data.group})
+        console.log(updatedGroup);
     } 
 
     static async addMembers(data) : Promise<void> {
