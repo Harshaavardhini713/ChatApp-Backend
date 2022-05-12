@@ -114,77 +114,7 @@ import mongoose from "mongoose";
             throw error;
         }
     } 
-    static async getChats() : Promise<IChat[]> {
-        try {
-            const chat = await chats.aggregate([
-                {
-                    $lookup: {
-                        from: "users",
-                        localField: "users",
-                        foreignField: "_id",
-                        as: "users"
-                    }
-                },
-                {
-                    $project: {
-                        "messages":0, 
-                        "users.password":0,
-                        "__v": 0,
-                        "users.__v":0, 
-                        "users.createdAt":0, 
-                        "users.updatedAt":0,
-                    }
-                }
-            ]).sort({ updatedAt: 'desc'}).exec();
-            return chat;
-        } catch (error) {
-            throw error;
-        }
-    }
-    /**
-     * get all chat of a user
-     */
-    static async getUserPersonalChat(data) : Promise<IChat[]> {
-        try {
-        
-            const newId = new mongoose.Types.ObjectId(data);
-           const chats = await this.getChats();
-        
-           const chat = chats.filter(chat => chat.users[0]._id.toString() === newId.toString());
-           const final = chat.filter(chat =>  chat.conType === "individual")
-           return final;
-        } catch (error) {
-            throw error;
-        }
-    } 
-
-    static async getUserGroupChat(data) : Promise<IChat[]> {
-        try {
-        
-            const newId = new mongoose.Types.ObjectId(data);
-           const chats = await this.getChats();
-        
-           const chat = chats.filter(chat => chat.users[0]._id.toString() === newId.toString());
-           const final = chat.filter(chat =>  chat.conType === "group")
-           
-           return final;
-        } catch (error) {
-            throw error;
-        }
-    }
-
-    static async searchChat(data) : Promise<IChat[]> {
-        try {
-        
-            const newId = new mongoose.Types.ObjectId(data);
-           const chats = await this.getChats();
-        
-           const chat = chats.filter(chat => chat.users[0]._id.toString() === newId.toString());
-           return chat;
-        } catch (error) {
-            throw error;
-        }
-    } 
+    
     static async getChatByChatID(id) {
         const newId = new mongoose.Types.ObjectId(id);
         
@@ -227,4 +157,149 @@ import mongoose from "mongoose";
             throw error;
         }
     }
+
+    static async getChats() : Promise<IChat[]> {
+        try {
+            const chat = await chats.aggregate([
+                {
+                    $lookup: {
+                        from: "users",
+                        localField: "users",
+                        foreignField: "_id",
+                        as: "users"
+                    }
+                },
+                {
+                    $project: {
+                        "messages":0, 
+                        "users.password":0,
+                        "__v": 0,
+                        "users.__v":0, 
+                        "users.createdAt":0, 
+                        "users.updatedAt":0,
+                    }
+                }
+            ]).sort({ updatedAt: 'desc'}).exec();
+            return chat;
+        } catch (error) {
+            throw error;
+        }
+    }
+    /**
+     * get all chat of a user
+     */
+    static async getUserPersonalChat(data) : Promise<IChat[]> {
+        try {
+        
+           const newId = new mongoose.Types.ObjectId(data);
+           const chats = await this.getChats();
+            
+           const chat = chats.filter(chat =>  chat.conType === "individual");
+           const final =  chat.filter(chat => chat.users[0]._id.toString() === newId.toString() || chat.users[1]._id.toString()===newId.toString());
+           //console.log(final)
+           return final;
+        } catch (error) {
+            throw error;
+        }
+    } 
+
+    static async getUserGroupChat(data){
+        try {
+                const chat = await chats.aggregate([
+                    {
+                        $match: { users: { $in: [new mongoose.Types.ObjectId(data)] }, conType : "group" }
+                    },
+                    {
+                        $lookup: {
+                            from: "users",
+                            localField: "users",
+                            foreignField: "_id",
+                            as: "users"
+                        }
+                    },
+                    {
+                        $project: {
+                            "messages":0, 
+                            "users.password":0,
+                            "__v": 0,
+                            "users.__v":0, 
+                            "users.createdAt":0, 
+                            "users.updatedAt":0,
+                        }
+                    }
+                ]).sort({ updatedAt: 'desc'}).exec();
+                return chat;
+            } catch (error) {
+                throw error;
+            }
+        
+        //    const newId = new mongoose.Types.ObjectId(data);
+        //    const chat = chats.find({users:newId, conType:"group"}).populate("users",{name: users.name}).sort({ updatedAt: 'desc'});
+        //    //console.log(chat);
+        //    return chat;
+        // } catch (error) {
+        //     throw error;
+        // }
+    }
+
+    static async searchChat(data) : Promise<IChat[]> {
+        try {
+            const chat = await chats.aggregate([
+                {
+                    $match: { users: { $in: [new mongoose.Types.ObjectId(data)] }}
+                },
+                {
+                    $lookup: {
+                        from: "users",
+                        localField: "users",
+                        foreignField: "_id",
+                        as: "users"
+                    }
+                },
+                {
+                    $project: {
+                        "messages":0, 
+                        "users.password":0,
+                        "__v": 0,
+                        "users.__v":0, 
+                        "users.createdAt":0, 
+                        "users.updatedAt":0,
+                    }
+                }
+            ]).sort({ updatedAt: 'desc'}).exec();
+            return chat;
+        } catch (error) {
+            throw error;
+        }
+        // try {
+        //     const newId = new mongoose.Types.ObjectId(data);
+        //     const chat = chats.find({users:newId}).populate("users").sort({ updatedAt: 'desc'});
+        //     //console.log(chat);
+        //    return chat;
+        // } catch (error) {
+        //     throw error;
+        // }
+    } 
+
+    static async exitGroup(data) : Promise<void> {
+
+        // const group = await chats.find({_id: data.group, users: data.user});
+        // console.log(group);
+        await chats.updateOne({_id: data.group, users: data.user},{ $pull: { 'users': data.user }});
+        // const updatedGroup = await chats.find({_id: data.group})
+        // console.log(updatedGroup);
+    } 
+
+    static async addMembers(data) : Promise<void> {
+        // console.log(data.user,data.user.length);
+        const group = await chats.findById(data.group).lean();
+        // console.log(group)
+        for(var i=0; i< data.user.length;i++)
+        { if(!group.users.toString().includes(data.user[i]))
+            await chats.findByIdAndUpdate(data.group, {$push: {'users':data.user[i]}}) 
+        }
+        // const updatedGroup = await chats.findById(data.group)
+        // console.log(updatedGroup);
+    } 
+
  }

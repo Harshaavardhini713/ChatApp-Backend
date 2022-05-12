@@ -15,8 +15,8 @@ import userController from "../controller/userController";
 import chatController from "../controller/chatController";
 import messageController from "../controller/messageController";
 import ContactController from "../controller/contactController";
-
-
+import reportController from "../controller/reportController";
+import profileController from "../controller/profileController";
 
 export default class Server {
     app = express();
@@ -215,6 +215,62 @@ export default class Server {
             }
         }));
 
+        /**
+         * Changing User Name
+         */
+         this.app.put("/users/changeName",responseToPostman(async (req: Request, resp: Response) => {
+            //authenticating the user
+            //@ts-ignore
+            if(!(req.session && req.session.user)){
+                throw new Error("User Not Authenticated")
+            }
+            //creating Joi schema
+            const schema = Joi.object({
+                uid:Joi.string().required(),
+                name:Joi.string().required()
+            });
+            //validate joi schema
+            await schema.validateAsync(req.body);
+            //Updating Name
+            //@ts-ignore
+            return profileController.updateName(req.body.uid,req.body.name);
+        }));
+
+        /**
+         * Changing User Profile Photo
+         */
+        this.app.put("/users/changePhoto",responseToPostman(async (req: Request, resp: Response) => {
+            //authenticating the user
+            //@ts-ignore
+            if(!(req.session && req.session.user)){
+                throw new Error("User Not Authenticated")
+            }
+            //creating Joi schema
+            const schema = Joi.object({
+                uid:Joi.string().required(),
+                avatar:Joi.string().required()
+            });
+            //validate joi schema
+            await schema.validateAsync(req.body);
+            //Updating Name
+            //@ts-ignore
+            return profileController.updatePhoto(req.body.uid,req.body.avatar);
+        }));
+
+        this.app.post("/api/v1/chat/reportChat", responseToPostman((req: Request, res: Response) => {
+            console.log(req.body);
+            return reportController.reportChat(req.body);
+        }));
+
+        this.app.post("/api/v1/chat/exitGroup", responseToPostman((req: Request, res: Response) => {
+            console.log(req.body);
+            return chatController.exitGroup(req.body);
+        }));
+
+        this.app.post("/api/v1/chat/addMembers", responseToPostman((req: Request, res: Response) => {
+            console.log(req.body);
+            return chatController.addMembers(req.body);
+        }));
 
   
     }
